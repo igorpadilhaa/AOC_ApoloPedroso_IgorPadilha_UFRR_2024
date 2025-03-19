@@ -9,7 +9,7 @@ entity Ram is
         EnableRead:  in  std_logic;
         AddressIn:   in  unsigned(7 downto 0);
         DataIn:      in  std_logic_vector(7 downto 0);
-        DataOut:     out std_logic_vector(7 downto 0)
+        DataOut:     out std_logic_vector(7 downto 0) := "ZZZZZZZZ";
     );
 end entity;
 
