@@ -1,6 +1,7 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use std.env.all;
 
 entity Processor is
 end entity;
@@ -8,8 +9,9 @@ end entity;
 architecture rtl of Processor is
     signal Clock: std_logic := '1';
     signal Instrucao: std_logic_vector(7 downto 0) := (others => '0');
+    signal OpCode: std_logic_vector(3 downto 0) := (others => '0');
 
-    constant ClockPeriod: time := 30 ns;
+    constant ClockPeriod: time := 10 ns;
 
     signal MemWrite: std_logic := '0';
     signal MemRead: std_logic := '0';
@@ -24,6 +26,31 @@ begin
        DataOut => Data,
        Clock => Clock,
        AddressIn => Address
+    );
+
+    Decoder: entity work.Decoder port map(
+        Instruction => Instrucao,
+        OpCode => OpCode,
+        RegL => open,
+        RegR => open,
+        MemAddr => open
+    );
+
+    ControlUnit: entity work.Control_Unit port map(
+        OpCode   => OpCode,
+        MemRead  => open,
+        MemWrite => open,
+        MemToReg => open,
+
+        RegRead  => open,
+        RegWrite => open,
+        RegWCond => open,
+        RegToAdr => open,
+
+        ALUOp => open,
+
+        CondOp  => open,
+        PCWrite => open
     );
 
     Clock <= '0', not Clock after ClockPeriod / 2;
@@ -42,11 +69,9 @@ begin
         Instrucao <= Data;
         MemRead <= '0';
         PC := PC + 1;
-    end process;
-        
-    process(Instrucao)
-        variable inst: integer;
-    begin
-        report "Instrução coletada: " & to_string(Instrucao);
-    end process;
+
+        if PC > 255 then
+            std.env.stop;
+        end if;
+end process;
 end rtl;

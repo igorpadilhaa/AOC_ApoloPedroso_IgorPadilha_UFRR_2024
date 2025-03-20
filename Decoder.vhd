@@ -4,7 +4,7 @@ use ieee.std_logic_1164.all;
 entity Decoder is
     port (
         Instruction: in std_logic_vector(7 downto 0);
-        OpCode: out std_logic_vector(3 downto 0);
+        OpCode: out std_logic_vector(3 downto 0) := "0000";
         RegL: out std_logic_vector(1 downto 0);
         RegR: out std_logic_vector(1 downto 0);
         MemAddr: out std_logic_vector(3 downto 0)
