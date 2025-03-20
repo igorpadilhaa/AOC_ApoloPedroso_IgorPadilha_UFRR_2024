@@ -16,7 +16,7 @@ begin
     process(Instruction)
     begin
         RegR <= "--";
-        MemAddr <= "----";
+        MemAddr <= "ZZZZ";
         
         if Instruction(0) = '0' then            -- RM class (Op[0X], Reg[XX], Mem[XXXX])
             OpCode <= "000" & Instruction(1);

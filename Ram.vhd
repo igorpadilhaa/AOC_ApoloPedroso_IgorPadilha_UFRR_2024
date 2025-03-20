@@ -1,8 +1,12 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.Ram_Pkg.all;
 
 entity Ram is
+    Generic (
+        INIT_DATA: RamVector := (others => (others => '0'))
+    );
     Port (
         Clock:       in  std_logic;
         EnableWrite: in  std_logic;
@@ -14,15 +18,19 @@ entity Ram is
 end entity;
 
 architecture rtl of Ram is
-    type RamVector is array (0 to 255) of std_logic_vector(7 downto 0);
-    signal Data: RamVector;
-    signal Address: integer;
+    signal Data: RamVector := INIT_DATA;
+    signal Address: integer := 0;
 begin
-    Address <= to_integer(AddressIn);
-
-    process(Clock)
+    process(AddressIn)
     begin
-        if rising_edge(Clock) then
+        if Clock = '1' and (EnableRead = '1' or EnableWrite = '1') then
+            Address <= to_integer(AddressIn);
+        end if;
+    end process;
+
+    process(Clock, EnableRead, EnableWrite)
+    begin
+        if Clock = '1' then
             if EnableWrite = '1' then
                 Data(Address) <= DataIn;
             end if;

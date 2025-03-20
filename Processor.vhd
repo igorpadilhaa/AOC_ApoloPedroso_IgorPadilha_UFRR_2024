@@ -8,70 +8,72 @@ end entity;
 
 architecture rtl of Processor is
     signal Clock: std_logic := '1';
-    signal Instrucao: std_logic_vector(7 downto 0) := (others => '0');
-    signal OpCode: std_logic_vector(3 downto 0) := (others => '0');
+    signal Fetch: std_logic := '1';
+    signal Exec:  std_logic;
+    signal PC: unsigned(7 downto 0) := to_unsigned(0, 8);
 
-    constant ClockPeriod: time := 10 ns;
+    signal CoreMemWrite: std_logic;
+    signal CoreMemRead:  std_logic;
+    signal CoreMemAddr:  unsigned(7 downto 0);
+    signal CoreMemIn: std_logic_vector(7 downto 0);
 
-    signal MemWrite: std_logic := '0';
-    signal MemRead: std_logic := '0';
-    signal Data: std_logic_vector(7 downto 0);
-    signal Address: unsigned(7 downto 0) := to_unsigned(0, 8);
+    signal Instruction: std_logic_vector(7 downto 0);
+    
+    signal MemRead: std_logic;
+    signal MemWrite: std_logic;
+    signal MemAddr: unsigned(7 downto 0);
+    signal MemIn:  std_logic_vector(7 downto 0);
+    signal MemOut: std_logic_vector(7 downto 0);
 
+    constant ClockPeriod: time := 1000 ns;
 begin
-    Ram: entity work.Ram port map(
-       EnableRead => MemRead,
-       EnableWrite => MemWrite,
-       DataIn => Data,
-       DataOut => Data,
-       Clock => Clock,
-       AddressIn => Address
+    Clock <= not Clock after ClockPeriod / 2;
+    Fetch <= not Fetch after ClockPeriod;
+    Exec  <= (not Fetch) and Clock;
+
+    Ram: entity work.Ram 
+        generic map(
+            INIT_DATA => (
+                0 => "10000100",
+                1 => "10000110",
+                8 => "00000110",
+                others => (others => 'U')
+            )
+        )
+        port map(
+            EnableRead => MemRead,
+            EnableWrite => MemWrite,
+            DataIn => MemIn,
+            DataOut => MemOut,
+            Clock => Clock,
+            AddressIn => PC
+        );
+
+    Core: entity work.Core port map(
+        PCIn => PC, 
+        Instruction => Instruction,
+
+        MemWrite => CoreMemWrite,
+        MemRead  => CoreMemRead,
+        MemAddr  => CoreMemAddr,
+        MemIn    => CoreMemIn,
+
+        MemOut  => MemOut,
+
+        PCOut => PC,
+        Clock => Exec
     );
 
-    Decoder: entity work.Decoder port map(
-        Instruction => Instrucao,
-        OpCode => OpCode,
-        RegL => open,
-        RegR => open,
-        MemAddr => open
-    );
-
-    ControlUnit: entity work.Control_Unit port map(
-        OpCode   => OpCode,
-        MemRead  => open,
-        MemWrite => open,
-        MemToReg => open,
-
-        RegRead  => open,
-        RegWrite => open,
-        RegWCond => open,
-        RegToAdr => open,
-
-        ALUOp => open,
-
-        CondOp  => open,
-        PCWrite => open
-    );
-
-    Clock <= '0', not Clock after ClockPeriod / 2;
-
-    process
-        variable PC: integer := 0;
+    process(Clock)
     begin
-        MemWrite <= '1';
-        Data <= std_logic_vector(to_unsigned(PC, 8));
-        wait for ClockPeriod;
-        
-        MemWrite <= '0';
-        MemRead <= '1';
-        wait for ClockPeriod;
+        if Fetch = '1' then
+            MemRead <= '1';
+            MemAddr <= PC;
+            Instruction <= MemOut;
 
-        Instrucao <= Data;
-        MemRead <= '0';
-        PC := PC + 1;
-
-        if PC > 255 then
-            std.env.stop;
+        else
+            MemRead <= CoreMemRead;
+            MemAddr <= CoreMemAddr;
         end if;
-end process;
+    end process;
 end rtl;

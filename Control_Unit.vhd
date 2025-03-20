@@ -7,11 +7,14 @@ entity Control_Unit is
         MemRead:  out std_logic; 
         MemWrite: out std_logic;
         MemToReg: out std_logic;
+        MemSrc:   out std_logic;
 
         RegRead:  out std_logic;
         RegWrite: out std_logic;
         RegWCond: out std_logic;
-        RegToAdr: out std_logic;
+        RegToReg: out std_logic;
+
+        RelAddr:  out std_logic;
 
         ALUOp:   out std_logic_vector(1 downto 0);
 
@@ -31,23 +34,29 @@ begin
         RegRead  <= '0';
         RegWrite <= '0';
         RegWCond <= '0';
+        RegToReg <= '0';
 
-        PCWrite  <= '0';
+        PCWrite <= '0';
 
         report "CU OpCode: " & to_string(OpCode);
         case OpCode is
             when "0000" => -- lw
-                MemRead  <= '1';
+                RelAddr  <= '1';
+
+                MemRead  <= '1'; 
                 RegWrite <= '1';
-                
+
                 MemToReg <= '1';
 
             when "0001" => -- sw
                 RegRead  <= '1';
+                RelAddr  <= '1';
+                
+                MemSrc   <= '1';
                 MemWrite <= '1';
 
             when "0100" => -- sum
-                RegRead <= '1';
+                RegRead <=  '1';
                 ALUOp   <= "00";
 
                 RegWrite <= '1';
@@ -67,26 +76,24 @@ begin
             when "0111" => -- mov
                 RegRead  <= '1';
                 RegWrite <= '1';
+                RegToReg <= '1';
 
             when "1000" => -- lwr
-                RegRead <= '1';
-                
-                MemRead <= '1';
-                RegToAdr <= '1';
+                RegRead  <= '1';
+                MemRead  <= '1';
 
                 MemToReg <= '1';
                 RegWrite <= '1';
 
             when "1001" => -- swr
                 RegRead  <= '1';
-                
-                RegToAdr <= '1'; 
                 MemWrite <= '1';
 
             when "1010" => -- cmov
                 RegRead  <= '1';
                 RegWrite <= '1';
                 RegWCond <= '1';
+                RegToReg <= '1';
 
             when "1100" => -- jr
                 RegRead <=  '1';
@@ -111,7 +118,7 @@ begin
             when others =>
                 assert False
                 report "Invalid instruction " & to_string(OpCode)
-                severity failure;
+                severity warning;
         end case;
     end process;
 end rtl;
